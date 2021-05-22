@@ -1,13 +1,13 @@
-package com.example;
+package io.leikvolle.hdtileindicator;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 
-public class ExamplePluginTest
+public class HDTileIndicatorPluginTest
 {
 	public static void main(String[] args) throws Exception
 	{
-		ExternalPluginManager.loadBuiltin(ExamplePlugin.class);
+		ExternalPluginManager.loadBuiltin(HDTileIndicatorPlugin.class);
 		RuneLite.main(args);
 	}
 }
