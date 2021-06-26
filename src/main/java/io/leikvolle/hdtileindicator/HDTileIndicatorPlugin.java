@@ -7,12 +7,9 @@ import javax.inject.Inject;
 
 import lombok.AccessLevel;
 import lombok.Getter;
-import net.runelite.api.GameState;
-import net.runelite.api.WallObject;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.WallObjectChanged;
-import net.runelite.api.events.WallObjectDespawned;
-import net.runelite.api.events.WallObjectSpawned;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.*;
+import net.runelite.api.events.*;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -26,7 +23,7 @@ import static net.runelite.api.ObjectID.ORE_VEIN_26664;
 
 import java.util.HashSet;
 import java.util.Set;
-
+@Slf4j
 @PluginDescriptor(
 		name = "HD Tile Indicator",
 		description = "Highlight the tile you are currently moving to in high definition",
@@ -36,8 +33,6 @@ import java.util.Set;
 public class HDTileIndicatorPlugin extends Plugin
 {
 
-	private static final Set<Integer> MINE_SPOTS = ImmutableSet.of(ORE_VEIN_26661, ORE_VEIN_26662, ORE_VEIN_26663, ORE_VEIN_26664);
-
 	@Inject
 	private OverlayManager overlayManager;
 
@@ -45,7 +40,7 @@ public class HDTileIndicatorPlugin extends Plugin
 	private HDTileIndicatorOverlay overlay;
 
 	@Getter(AccessLevel.PACKAGE)
-	private final Set<WallObject> veins = new HashSet<>();
+	private final Set<GameObject> rocks = new HashSet<>();
 
 	@Provides
 	HDTileIndicatorConfig provideConfig(ConfigManager configManager)
@@ -63,38 +58,26 @@ public class HDTileIndicatorPlugin extends Plugin
 	protected void shutDown() throws Exception
 	{
 		overlayManager.remove(overlay);
+		rocks.clear();
+	}
+/*
+	@Subscribe
+	public void onGameObjectSpawned(GameObjectSpawned event)
+	{
+		addGameObject(event.getGameObject());
 	}
 
 	@Subscribe
-	public void onWallObjectSpawned(WallObjectSpawned event)
+	public void onGameObjectChanged(GameObjectChanged event)
 	{
-
-		WallObject wallObject = event.getWallObject();
-		if (MINE_SPOTS.contains(wallObject.getId()))
-		{
-			veins.add(wallObject);
-		}
+		removeGameObject(event.getPrevious());
+		addGameObject(event.getGameObject());
 	}
 
 	@Subscribe
-	public void onWallObjectChanged(WallObjectChanged event)
+	public void onGameObjectDespawned(GameObjectDespawned event)
 	{
-
-		WallObject previous = event.getPrevious();
-		WallObject wallObject = event.getWallObject();
-
-		veins.remove(previous);
-		if (MINE_SPOTS.contains(wallObject.getId()))
-		{
-			veins.add(wallObject);
-		}
-	}
-
-	@Subscribe
-	public void onWallObjectDespawned(WallObjectDespawned event)
-	{
-		WallObject wallObject = event.getWallObject();
-		veins.remove(wallObject);
+		removeGameObject(event.getGameObject());
 	}
 
 	@Subscribe
@@ -103,7 +86,19 @@ public class HDTileIndicatorPlugin extends Plugin
 		if (event.getGameState() == GameState.LOADING)
 		{
 			// on region changes the tiles get set to null
-			veins.clear();
+			rocks.clear();
 		}
 	}
+
+	private void addGameObject(GameObject gameObject)
+	{
+		if (gameObject.getRenderable() != null || gameObject.getRenderable() instanceof Model) {
+			rocks.add(gameObject);
+		}
+	}
+
+	private void removeGameObject(GameObject gameObject)
+	{
+		rocks.remove(gameObject);
+	}*/
 }

@@ -74,10 +74,18 @@ public interface HDTileIndicatorConfig extends Config
 	default int highlightInteractionFramerate() {return 15;}
 
 	@ConfigItem(
+			keyName = "highlightInteractionWidth",
+			name = "Interaction highlight width",
+			description = "Limits how often the interaction highlight updates",
+			position = 7
+	)
+	default int highlightInteractionWidth() {return 4;}
+
+	@ConfigItem(
 			keyName = "scalingFactor",
 			name = "Scaling Factor",
 			description = "Limits how often the interaction highlight updates",
-			position = 7
+			position = 8
 	)
 	default int scalingFactor() {return 2;}
 }

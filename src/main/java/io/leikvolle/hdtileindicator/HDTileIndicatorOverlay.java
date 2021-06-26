@@ -77,7 +77,7 @@ public class HDTileIndicatorOverlay extends Overlay
         }
 
         MenuEntry menuEntry = menuEntries[last];
-        String target = menuEntry.getTarget();
+        String target = menuEntry.getTarget().replaceAll("(<.*?>)?(\\(.*?\\))?","").trim();
         String option = menuEntry.getOption();
         MenuAction type = MenuAction.of(menuEntry.getType());
 
@@ -110,7 +110,7 @@ public class HDTileIndicatorOverlay extends Overlay
         int nearesOffset = Integer.MAX_VALUE;
         for (Actor actor:client.getNpcs()) {
             String name = actor.getName();
-            if (name != null && name.equals(target.replaceAll("(<.*?>)?(\\(.*?\\))?","").trim())) {
+            if (name != null && name.equals(target)) {
                 Shape shape = Perspective.getClickbox(client, actor.getModel(), actor.getOrientation(), actor.getLocalLocation());
                 if (shape != null) {
                     Model model = actor.getModel();
@@ -125,19 +125,45 @@ public class HDTileIndicatorOverlay extends Overlay
             }
         }
 
-        if (nearest != null) {
-            drawHighlight(graphics, nearest.getModel(), nearest.getLocalLocation().getX(), nearest.getLocalLocation().getY(), nearest.getOrientation(), highlightColor);
+        if (nearest == null) {
+            /*
+            GameObject nearestGO = null;
+
+            for (GameObject gameObject:plugin.getRocks()) {
+                if (gameObject.getRenderable() != null && gameObject.getRenderable() instanceof Model) {
+                    Model model = (Model) gameObject.getRenderable();
+                    Shape shape = gameObject.getClickbox();
+                    if (model != null && shape != null) {
+                        if (shape.contains(mousePosition.getX(), mousePosition.getY())) {
+                            if (nearesOffset > model.getBufferOffset()) {
+                                nearestGO = gameObject;
+                                nearesOffset = model.getBufferOffset();
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (nearestGO != null) {
+                drawHighlight(graphics, (Model)nearestGO.getRenderable(), nearestGO.getLocalLocation(), nearestGO.getOrientation().getAngle(), highlightColor);
+            }*/
+
+        } else {
+            drawHighlight(graphics, nearest.getModel(), nearest.getLocalLocation(), nearest.getOrientation(), highlightColor);
         }
 
         return null;
     }
 
-    private void drawHighlight(final Graphics2D graphics, Model model, int localX, int localY, int rotation, Color color) {
-        long start = System.currentTimeMillis();
+    private void drawHighlight(final Graphics2D graphics, Model model, LocalPoint point, int rotation, Color color) {
         if (model == null) {
             log.info("Model is null");
             return;
         }
+        log.info("REndering!!!!!!!!!!!!!!!!!!!!");
+        int localX = point.getX();
+        int localY = point.getY();
+        log.info(localX + " " + localY);
         int scalingFactor = config.scalingFactor();
 
         if (System.currentTimeMillis() - lastHighlightRender < (1000 / config.highlightInteractionFramerate())) {
@@ -155,7 +181,16 @@ public class HDTileIndicatorOverlay extends Overlay
         int[] x2d = new int[vCount];
         int[] y2d = new int[vCount];
 
-        int localZ = getHeight(client, localX, localY, client.getPlane());
+        final byte[][][] tileSettings = client.getTileSettings();
+
+        int plane = client.getPlane();
+        int tilePlane = plane;
+        if (plane < Constants.MAX_Z - 1 && (tileSettings[1][point.getSceneX()][point.getSceneY()] & TILE_FLAG_BRIDGE) == TILE_FLAG_BRIDGE)
+        {
+            tilePlane = plane + 1;
+        }
+
+        int localZ = getHeight(client, localX, localY, tilePlane);
 
         long before = System.currentTimeMillis();
         Perspective.modelToCanvas(client, vCount, localX, localY, localZ, rotation, x3d, z3d, y3d, x2d, y2d);
@@ -166,15 +201,14 @@ public class HDTileIndicatorOverlay extends Overlay
         int[] tx = model.getTrianglesX();
         int[] ty = model.getTrianglesY();
         int[] tz = model.getTrianglesZ();
-
-        before = System.currentTimeMillis();
-        int minX = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE;
-        int minY = Integer.MAX_VALUE;
-        int maxY = Integer.MIN_VALUE;
-        org.locationtech.jts.geom.Polygon[] polygons = new org.locationtech.jts.geom.Polygon[tCount];
+        Polygon[] polygons = new Polygon[tCount];
+        Graphics2D g = highlightImage.createGraphics();
 
         int tAfterCulling = 0;
+        g.setColor(color);
+        final Stroke originalStroke = g.getStroke();
+        Composite originalComposite = g.getComposite();
+        g.setStroke(new BasicStroke(config.highlightInteractionWidth(), BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 10, null, 0));
         for (int i = 0; i < tCount; i++) {
             if (getTriDirection(x2d[tx[i]], y2d[tx[i]], x2d[ty[i]], y2d[ty[i]], x2d[tz[i]], y2d[tz[i]]) >= 0) {
                 continue;
@@ -183,41 +217,28 @@ public class HDTileIndicatorOverlay extends Overlay
                     new int[]{x2d[tx[i]] / scalingFactor,x2d[ty[i]]/scalingFactor,x2d[tz[i]]/scalingFactor},
                     new int[]{y2d[tx[i]]/scalingFactor,y2d[ty[i]]/scalingFactor,y2d[tz[i]]/scalingFactor},
                     3);
-            Rectangle b = p.getBounds();
-            minX = Math.min(minX, b.x);
-            minY = Math.min(minY, b.y);
-            maxX = Math.max(maxX, b.x+b.width);
-            maxY = Math.max(maxY, b.y+b.height);
-            //polygons.add(p);
-            fillPolygon(highlightImage, p, config.highlightInteractionColor());
 
-            /*
-            Coordinate[] coords = new Coordinate[] {
-                    new Coordinate(x2d[tx[i]], y2d[tx[i]]),
-                    new Coordinate(x2d[ty[i]], y2d[ty[i]]),
-                    new Coordinate(x2d[tz[i]], y2d[tz[i]]),
-                    new Coordinate(x2d[tx[i]], y2d[tx[i]])
-            };
-            org.locationtech.jts.geom.Polygon p = new GeometryFactory().createPolygon(coords);
+            g.drawPolygon(p);
             polygons[tAfterCulling] = p;
-            tAfterCulling++;*/
+            tAfterCulling++;
 
         }
-        //GeometryCollection gc = new GeometryFactory().createGeometryCollection(Arrays.copyOfRange(polygons, 0, tAfterCulling));
-        //log.info(tCount + " " + tAfterCulling);
-        //ShapeWriter sw = new ShapeWriter();
-        Graphics2D g = highlightImage.createGraphics();
-        //g.draw(sw.toShape(gc.union()));
-        //polygons.parallelStream().forEach(polygon -> fillPolygon(highlightImage, polygon, config.highlightInteractionColor()));
-        log.info(System.currentTimeMillis()-before + " " + 1000.0/(System.currentTimeMillis()-before) + " Plygon");
-        //highlightImage = ImageUtil.resizeImage(highlightImage, client.getCanvasWidth(), client.getCanvasHeight());
+        g.setStroke(originalStroke);
+
+        g.setComposite(AlphaComposite.Clear);
+        g.setColor(new Color(0x00000000));
+        for (int i = 0; i < tAfterCulling; i++) {
+            g.fillPolygon(polygons[i]);
+        }
+        g.setComposite(originalComposite);
+
+        log.info(System.currentTimeMillis()-before + " " + 1000.0/(System.currentTimeMillis()-before) + " Polygon " + tAfterCulling);
         before = System.currentTimeMillis();
-        highlightImage = outlineImage(highlightImage, new Rectangle(minX, minY, maxX-minX, maxY-minY), color);
+        //highlightImage = outlineImage(highlightImage, new Rectangle(minX, minY, maxX-minX, maxY-minY), color);
         log.info(System.currentTimeMillis()-before + " " + 1000.0/(System.currentTimeMillis()-before) + " Outline");
 
         graphics.drawImage(highlightImage, 0, 0, null);
         lastHighlightRender = System.currentTimeMillis();
-        log.info(System.currentTimeMillis()-start + " " + 1000.0/(System.currentTimeMillis()-before) + " Total");
 
     }
 
@@ -312,22 +333,6 @@ public class HDTileIndicatorOverlay extends Overlay
         }
 
         return 0;
-    }
-
-    public static BufferedImage erodeImage(final BufferedImage image, final Color color)
-    {
-        final BufferedImage erodedImage = image;
-        for (int x = 0; x < erodedImage.getWidth(); x++)
-        {
-            for (int y = 0; y < erodedImage.getHeight(); y++)
-            {
-                int pixel = image.getRGB(x, y);
-                if (pixel == color.getRGB()) {
-                    erodedImage.setRGB(x, y, Color.TRANSLUCENT);
-                }
-            }
-        }
-        return erodedImage;
     }
 
     private BufferedImage outlineImage(BufferedImage image, Rectangle bounds, Color c) {
