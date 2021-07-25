@@ -9,83 +9,80 @@ import net.runelite.client.config.ConfigItem;
 @ConfigGroup("hdtileindicators")
 public interface HDTileIndicatorConfig extends Config
 {
-	@ConfigItem(
-			keyName = "highlightDestinationColor",
-			name = "Destination tile",
-			description = "Configures the highlight color of current destination",
-			position = 1
-	)
-	default Color highlightDestinationColor()
-	{
-		return new Color(0xFFDDC64C);
-	}
-
-	@ConfigItem(
-			keyName = "highlightDestinationTile",
-			name = "Highlight destination tile",
-			description = "Highlights tile player is walking to",
-			position = 2
-	)
-	default boolean highlightDestinationTile()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-			keyName = "highlightInteractionColor",
-			name = "Hovered tile",
-			description = "Configures the highlight color of hovered tile",
-			position = 3
-	)
-	default Color highlightInteractionColor()
-	{
-		return Color.GREEN;
-	}
 
 	@Alpha
 	@ConfigItem(
 			keyName = "highlightAttackColor",
 			name = "Hovered tile",
 			description = "Configures the highlight color of hovered tile",
-			position = 4
+			position = 1
 	)
 	default Color highlightAttackColor()
 	{
-		return Color.RED;
+		return new Color(0x80FF0000, true);
 	}
 
+	@Alpha
 	@ConfigItem(
-			keyName = "highlightHoveredInteraction",
-			name = "Highlight hovered tile",
-			description = "Highlights tile player is hovering with mouse",
-			position = 5
+			keyName = "highlightNpcColor",
+			name = "Hovered tile",
+			description = "Configures the highlight color of hovered tile",
+			position = 2
 	)
-	default boolean highlightHoveredTile()
+	default Color highlightNpcColor()
 	{
-		return true;
+		return new Color(0x80FFFF00, true);
 	}
 
+	@Alpha
 	@ConfigItem(
-			keyName = "highlightInteractionFramerate",
-			name = "Interaction highlight framerate",
-			description = "Limits how often the interaction highlight updates",
-			position = 6
+			keyName = "highlightObjectColor",
+			name = "Hovered tile",
+			description = "Configures the highlight color of hovered tile",
+			position = 3
 	)
-	default int highlightInteractionFramerate() {return 15;}
+	default Color highlightObjectColor()
+	{
+		return new Color(0x8000FFFF, true);
+	}
 
 	@ConfigItem(
 			keyName = "highlightInteractionWidth",
 			name = "Interaction highlight width",
 			description = "Limits how often the interaction highlight updates",
-			position = 7
+			position = 4
 	)
-	default int highlightInteractionWidth() {return 4;}
+	default int highlightInteractionWidth() {return 3;}
 
 	@ConfigItem(
-			keyName = "scalingFactor",
-			name = "Scaling Factor",
+			keyName = "highlightInteractionFeather",
+			name = "Interaction highlight feather",
+			description = "Limits how often the interaction highlight updates",
+			position = 5
+	)
+	default int highlightInteractionFeather() {return 50;}
+
+	@ConfigItem(
+			keyName = "highlightNPCs",
+			name = "Highlight NPCs",
+			description = "Limits how often the interaction highlight updates",
+			position = 6
+	)
+	default boolean highlightNPCs() {return true;}
+
+	@ConfigItem(
+			keyName = "highlightGameObjects",
+			name = "Highlight Game Objects",
+			description = "Limits how often the interaction highlight updates",
+			position = 7
+	)
+	default boolean highlightGameObjects() {return true;}
+
+	@ConfigItem(
+			keyName = "highlightWallObjects",
+			name = "Highlight Wall Objects",
 			description = "Limits how often the interaction highlight updates",
 			position = 8
 	)
-	default int scalingFactor() {return 2;}
+	default boolean highlightWallObjects() {return true;}
 }

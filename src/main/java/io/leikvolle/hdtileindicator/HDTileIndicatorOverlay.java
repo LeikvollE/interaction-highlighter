@@ -2,7 +2,11 @@ package io.leikvolle.hdtileindicator;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
@@ -12,240 +16,113 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
-import net.runelite.client.game.SkillIconManager;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayPriority;
 import net.runelite.client.ui.overlay.OverlayUtil;
+import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
 import net.runelite.client.util.ImageUtil;
 
 import static net.runelite.api.Constants.TILE_FLAG_BRIDGE;
+
 @Slf4j
-public class HDTileIndicatorOverlay extends Overlay
-{
+public class HDTileIndicatorOverlay extends Overlay {
     private final Client client;
     private final HDTileIndicatorConfig config;
     private final HDTileIndicatorPlugin plugin;
+    private final ModelOutlineRenderer modelOutlineRenderer;
+
+    private final Pattern p;
 
     private final BufferedImage ARROW_ICON;
-    private BufferedImage highlightImage;
-    private long lastHighlightRender = 0;
 
     @Inject
-    private HDTileIndicatorOverlay(Client client, HDTileIndicatorConfig config, HDTileIndicatorPlugin plugin, SkillIconManager iconManager)
-    {
+    private HDTileIndicatorOverlay(Client client, HDTileIndicatorConfig config, HDTileIndicatorPlugin plugin,
+                                   ModelOutlineRenderer modelOutlineRenderer) {
         this.client = client;
         this.config = config;
         this.plugin = plugin;
+        this.modelOutlineRenderer = modelOutlineRenderer;
 
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_SCENE);
         setPriority(OverlayPriority.MED);
 
+        p = Pattern.compile("(?:<col=[^>]*>)?([^<]*)(?:<.*)?");
+
         ARROW_ICON = ImageUtil.loadImageResource(HDTileIndicatorPlugin.class, "arrow.png");
-        
     }
 
     @Override
-    public Dimension render(Graphics2D graphics)
-    {
+    public Dimension render(Graphics2D graphics) {
 
-        if (config.highlightDestinationTile())
-        {
-            renderTile(graphics, client.getLocalDestinationLocation(), config.highlightDestinationColor());
-        }
-
-        renderHighlight(graphics);
-
+        renderHighlight();
 
         return null;
     }
 
-    private Dimension renderHighlight(Graphics2D graphics) {
+    private void renderHighlight() {
 
         if (client.isMenuOpen()) {
-            return null;
+            return;
         }
 
         MenuEntry[] menuEntries = client.getMenuEntries();
         int last = menuEntries.length - 1;
 
-        if (last < 0)
-        {
-            return null;
+        if (last < 0) {
+            return;
         }
 
         MenuEntry menuEntry = menuEntries[last];
-        String target = menuEntry.getTarget().replaceAll("(<.*?>)?(\\(.*?\\))?","").trim();
+
+        Matcher m = p.matcher(menuEntry.getTarget());
+        final String targetName = m.matches() ? m.group(1) : "";
+
         String option = menuEntry.getOption();
-        MenuAction type = MenuAction.of(menuEntry.getType());
-
-        if (type == MenuAction.RUNELITE_OVERLAY || type == MenuAction.CC_OP_LOW_PRIORITY)
-        {
-            // These are always right click only
-            return null;
-        }
-
-        if (Strings.isNullOrEmpty(option) || Strings.isNullOrEmpty(target))
-        {
-            return null;
-        }
 
         Color highlightColor;
-        log.info(option);
-        switch (option)
-        {
+        switch (option) {
             case "Attack":
-                highlightColor = new Color(0xFFFF0000);
+                highlightColor = config.highlightAttackColor();
                 break;
             default:
-                highlightColor = new Color(0xffFFEF00);
+                highlightColor = config.highlightNpcColor();
                 break;
         }
 
         Point mousePosition = client.getMouseCanvasPosition();
 
-        Actor nearest = null;
-        int nearesOffset = Integer.MAX_VALUE;
-        for (Actor actor:client.getNpcs()) {
-            String name = actor.getName();
-            if (name != null && name.equals(target)) {
+        NPC nearest = null;
+        for (NPC actor : client.getNpcs()) {
+            if (Objects.equals(actor.getName(), targetName)) {
                 Shape shape = Perspective.getClickbox(client, actor.getModel(), actor.getOrientation(), actor.getLocalLocation());
-                if (shape != null) {
-                    Model model = actor.getModel();
-                    if (shape.contains(mousePosition.getX(), mousePosition.getY())) {
-                        log.info(actor.getName() + "." + target);
-                        if (nearesOffset > model.getBufferOffset()) {
-                            nearest = actor;
-                            nearesOffset = model.getBufferOffset();
-                        }
-                    }
+                if (shape != null && shape.contains(mousePosition.getX(), mousePosition.getY())) {
+                    nearest = actor;
                 }
             }
         }
-
         if (nearest == null) {
-            /*
-            GameObject nearestGO = null;
-
-            for (GameObject gameObject:plugin.getRocks()) {
-                if (gameObject.getRenderable() != null && gameObject.getRenderable() instanceof Model) {
-                    Model model = (Model) gameObject.getRenderable();
-                    Shape shape = gameObject.getClickbox();
-                    if (model != null && shape != null) {
-                        if (shape.contains(mousePosition.getX(), mousePosition.getY())) {
-                            if (nearesOffset > model.getBufferOffset()) {
-                                nearestGO = gameObject;
-                                nearesOffset = model.getBufferOffset();
-                            }
-                        }
+            TileObject nearestGO = null;
+            for (TileObject tileObject : plugin.getTileObjects()) {
+                if (tileObject.getId() == menuEntry.getIdentifier()) {
+                    Shape clickBox = tileObject.getClickbox();
+                    if (clickBox != null && clickBox.contains(mousePosition.getX(), mousePosition.getY())) {
+                        nearestGO = tileObject;
                     }
                 }
             }
-
             if (nearestGO != null) {
-                drawHighlight(graphics, (Model)nearestGO.getRenderable(), nearestGO.getLocalLocation(), nearestGO.getOrientation().getAngle(), highlightColor);
-            }*/
-
-        } else {
-            drawHighlight(graphics, nearest.getModel(), nearest.getLocalLocation(), nearest.getOrientation(), highlightColor);
-        }
-
-        return null;
-    }
-
-    private void drawHighlight(final Graphics2D graphics, Model model, LocalPoint point, int rotation, Color color) {
-        if (model == null) {
-            log.info("Model is null");
-            return;
-        }
-        log.info("REndering!!!!!!!!!!!!!!!!!!!!");
-        int localX = point.getX();
-        int localY = point.getY();
-        log.info(localX + " " + localY);
-        int scalingFactor = config.scalingFactor();
-
-        if (System.currentTimeMillis() - lastHighlightRender < (1000 / config.highlightInteractionFramerate())) {
-            graphics.drawImage(highlightImage, 0, 0, null);
-            return;
-        }
-
-        highlightImage = new BufferedImage(client.getCanvasWidth()/scalingFactor, client.getCanvasHeight()/scalingFactor, BufferedImage.TYPE_4BYTE_ABGR);
-
-        int vCount = model.getVerticesCount();
-        int[] x3d = model.getVerticesX();
-        int[] y3d = model.getVerticesY();
-        int[] z3d = model.getVerticesZ();
-
-        int[] x2d = new int[vCount];
-        int[] y2d = new int[vCount];
-
-        final byte[][][] tileSettings = client.getTileSettings();
-
-        int plane = client.getPlane();
-        int tilePlane = plane;
-        if (plane < Constants.MAX_Z - 1 && (tileSettings[1][point.getSceneX()][point.getSceneY()] & TILE_FLAG_BRIDGE) == TILE_FLAG_BRIDGE)
-        {
-            tilePlane = plane + 1;
-        }
-
-        int localZ = getHeight(client, localX, localY, tilePlane);
-
-        long before = System.currentTimeMillis();
-        Perspective.modelToCanvas(client, vCount, localX, localY, localZ, rotation, x3d, z3d, y3d, x2d, y2d);
-        log.info(System.currentTimeMillis()-before + " " + 1000.0/(System.currentTimeMillis()-before) + " Model");
-
-
-        int tCount = model.getTrianglesCount();
-        int[] tx = model.getTrianglesX();
-        int[] ty = model.getTrianglesY();
-        int[] tz = model.getTrianglesZ();
-        Polygon[] polygons = new Polygon[tCount];
-        Graphics2D g = highlightImage.createGraphics();
-
-        int tAfterCulling = 0;
-        g.setColor(color);
-        final Stroke originalStroke = g.getStroke();
-        Composite originalComposite = g.getComposite();
-        g.setStroke(new BasicStroke(config.highlightInteractionWidth(), BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 10, null, 0));
-        for (int i = 0; i < tCount; i++) {
-            if (getTriDirection(x2d[tx[i]], y2d[tx[i]], x2d[ty[i]], y2d[ty[i]], x2d[tz[i]], y2d[tz[i]]) >= 0) {
-                continue;
+                modelOutlineRenderer.drawOutline(nearestGO, config.highlightInteractionWidth(), config.highlightObjectColor(), config.highlightInteractionFeather());
             }
-            Polygon p = new Polygon(
-                    new int[]{x2d[tx[i]] / scalingFactor,x2d[ty[i]]/scalingFactor,x2d[tz[i]]/scalingFactor},
-                    new int[]{y2d[tx[i]]/scalingFactor,y2d[ty[i]]/scalingFactor,y2d[tz[i]]/scalingFactor},
-                    3);
-
-            g.drawPolygon(p);
-            polygons[tAfterCulling] = p;
-            tAfterCulling++;
-
+        } else {
+            modelOutlineRenderer.drawOutline(nearest, config.highlightInteractionWidth(), highlightColor, config.highlightInteractionFeather());
         }
-        g.setStroke(originalStroke);
-
-        g.setComposite(AlphaComposite.Clear);
-        g.setColor(new Color(0x00000000));
-        for (int i = 0; i < tAfterCulling; i++) {
-            g.fillPolygon(polygons[i]);
-        }
-        g.setComposite(originalComposite);
-
-        log.info(System.currentTimeMillis()-before + " " + 1000.0/(System.currentTimeMillis()-before) + " Polygon " + tAfterCulling);
-        before = System.currentTimeMillis();
-        //highlightImage = outlineImage(highlightImage, new Rectangle(minX, minY, maxX-minX, maxY-minY), color);
-        log.info(System.currentTimeMillis()-before + " " + 1000.0/(System.currentTimeMillis()-before) + " Outline");
-
-        graphics.drawImage(highlightImage, 0, 0, null);
-        lastHighlightRender = System.currentTimeMillis();
-
     }
 
-    private void renderTile(final Graphics2D graphics, final LocalPoint dest, final Color color)
-    {
-        if (dest == null)
-        {
+    private void renderTile(final Graphics2D graphics, final LocalPoint dest, final Color color) {
+        if (dest == null) {
             return;
         }
 
@@ -256,7 +133,7 @@ public class HDTileIndicatorOverlay extends Overlay
 
         if (ta == null) {
             poly = getCanvasTargetTileAreaPoly(client, dest, 0.5, client.getPlane(), 0);
-            Point canvasLoc = Perspective.getCanvasImageLocation(client, dest, ARROW_ICON, 150 + (int)(20 * Math.sin(client.getGameCycle()/10.0)));
+            Point canvasLoc = Perspective.getCanvasImageLocation(client, dest, ARROW_ICON, 150 + (int) (20 * Math.sin(client.getGameCycle() / 10.0)));
 
             if (canvasLoc != null) {
                 graphics.drawImage(ARROW_ICON, canvasLoc.getX(), canvasLoc.getY(), null);
@@ -265,8 +142,7 @@ public class HDTileIndicatorOverlay extends Overlay
             poly = getCanvasTargetTileAreaPoly(client, ta.getLocalLocation(), 0.5, client.getPlane(), 0);
         }
 
-        if (poly != null)
-        {
+        if (poly != null) {
             OverlayUtil.renderPolygon(graphics, poly, color);
         }
 
@@ -277,22 +153,19 @@ public class HDTileIndicatorOverlay extends Overlay
             @Nonnull LocalPoint localLocation,
             double size,
             int plane,
-            int zOffset)
-    {
+            int zOffset) {
 
         final byte[][][] tileSettings = client.getTileSettings();
 
         final int sceneX = localLocation.getSceneX();
         final int sceneY = localLocation.getSceneY();
 
-        if (sceneX < 0 || sceneY < 0 || sceneX >= Perspective.SCENE_SIZE || sceneY >= Perspective.SCENE_SIZE)
-        {
+        if (sceneX < 0 || sceneY < 0 || sceneX >= Perspective.SCENE_SIZE || sceneY >= Perspective.SCENE_SIZE) {
             return null;
         }
 
         int tilePlane = plane;
-        if (plane < Constants.MAX_Z - 1 && (tileSettings[1][sceneX][sceneY] & TILE_FLAG_BRIDGE) == TILE_FLAG_BRIDGE)
-        {
+        if (plane < Constants.MAX_Z - 1 && (tileSettings[1][sceneX][sceneY] & TILE_FLAG_BRIDGE) == TILE_FLAG_BRIDGE) {
             tilePlane = plane + 1;
         }
 
@@ -301,7 +174,7 @@ public class HDTileIndicatorOverlay extends Overlay
         final int height = getHeight(client, localLocation.getX(), localLocation.getY(), tilePlane) - zOffset;
 
         for (int i = 0; i < resolution; i++) {
-            double angle = ((float)i/resolution)*2*Math.PI;
+            double angle = ((float) i / resolution) * 2 * Math.PI;
             double offsetX = Math.cos(angle);
             double offsetY = Math.sin(angle);
             int x = (int) (localLocation.getX() + (offsetX * Perspective.LOCAL_TILE_SIZE * size));
@@ -317,12 +190,10 @@ public class HDTileIndicatorOverlay extends Overlay
         return poly;
     }
 
-    private static int getHeight(@Nonnull Client client, int localX, int localY, int plane)
-    {
+    private static int getHeight(@Nonnull Client client, int localX, int localY, int plane) {
         int sceneX = localX >> Perspective.LOCAL_COORD_BITS;
         int sceneY = localY >> Perspective.LOCAL_COORD_BITS;
-        if (sceneX >= 0 && sceneY >= 0 && sceneX < Perspective.SCENE_SIZE && sceneY < Perspective.SCENE_SIZE)
-        {
+        if (sceneX >= 0 && sceneY >= 0 && sceneX < Perspective.SCENE_SIZE && sceneY < Perspective.SCENE_SIZE) {
             int[][][] tileHeights = client.getTileHeights();
 
             int x = localX & (Perspective.LOCAL_TILE_SIZE - 1);
@@ -333,79 +204,6 @@ public class HDTileIndicatorOverlay extends Overlay
         }
 
         return 0;
-    }
-
-    private BufferedImage outlineImage(BufferedImage image, Rectangle bounds, Color c) {
-        BufferedImage outline = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_4BYTE_ABGR);
-        int[] dc = {-1,0,1};
-        int[] dx = {0, 1, 0, -1};
-        int[] dy = {-1, 0, 1, 0};
-        int minX = Math.max(bounds.x, 0);
-        int maxX = Math.min(bounds.x+bounds.width, image.getWidth());
-        int minY = Math.max(bounds.y, 0);
-        int maxY = Math.min(bounds.y+bounds.height, image.getHeight());
-        for (int x = minX; x < maxX; x++) {
-            for (int y = minY; y < maxY; y++) {
-                if (image.getRGB(x, y) != 0x00000000) {
-                    for (int i = 0; i < dx.length; i++) {
-                        int xx = x + dx[i];
-                        int yy = y + dy[i];
-                        if (xx >= 0 && xx < image.getWidth() && yy >= 0 && yy < image.getHeight() && image.getRGB(xx, yy) == 0x00000000) {
-                            outline.setRGB(x, y, c.getRGB());
-                        }
-                    }
-                    /*for (int i = 0; i < 3; i++) {
-                        for (int j = 0; j < 3; j++) {
-                            int xx = x + dc[i];
-                            int yy = y + dc[j];
-                            if (xx >= 0 && xx < image.getWidth() && yy >= 0 && yy < image.getHeight() && image.getRGB(xx, yy) == 0x00000000) {
-                                outline.setRGB(x, y, c.getRGB());
-                            }
-                        }
-                    }*/
-                }
-            }
-        }
-        return outline;
-    }
-
-    private void fillPolygon(BufferedImage image, Polygon p, Color c) {
-        Rectangle bounds = p.getBounds();
-        int minX = Math.max(bounds.x, 0);
-        int maxX = Math.min(bounds.x+bounds.width, image.getWidth());
-        int minY = Math.max(bounds.y, 0);
-        int maxY = Math.min(bounds.y+bounds.height, image.getHeight());
-        for (int y = minY; y < maxY; y++) {
-            for (int x = minX; x < maxX; x++) {
-                if (p.contains(x, y)) {
-                    image.setRGB(x, y, c.getRGB());
-                }
-            }
-        }
-    }
-
-    private void fillPolygons(BufferedImage image, List<Polygon> polygons, Rectangle bounds, Color c) {
-        int minX = Math.max(bounds.x, 0);
-        int maxX = Math.min(bounds.x+bounds.width, image.getWidth());
-        int minY = Math.max(bounds.y, 0);
-        int maxY = Math.min(bounds.y+bounds.height, image.getHeight());
-        for (int y = minY; y < maxY; y++) {
-            for (int x = minX; x < maxX; x++) {
-                int finalX = x;
-                int finalY = y;
-                if (polygons.parallelStream().anyMatch(p -> p.contains(finalX, finalY))) {
-                    image.setRGB(x, y, c.getRGB());
-                }
-            }
-        }
-    }
-
-    private int getTriDirection(int x1, int y1, int x2, int y2, int x3, int y3) {
-        int x4 = x2 - x1;
-        int y4 = y2 - y1;
-        int x5 = x3 - x1;
-        int y5 = y3 - y1;
-        return x4 * y5 - y4 * x5;
     }
 
 }

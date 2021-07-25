@@ -1,7 +1,5 @@
 package io.leikvolle.hdtileindicator;
 
-
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 
@@ -15,11 +13,6 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
-
-import static net.runelite.api.ObjectID.ORE_VEIN_26661;
-import static net.runelite.api.ObjectID.ORE_VEIN_26662;
-import static net.runelite.api.ObjectID.ORE_VEIN_26663;
-import static net.runelite.api.ObjectID.ORE_VEIN_26664;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -40,7 +33,7 @@ public class HDTileIndicatorPlugin extends Plugin
 	private HDTileIndicatorOverlay overlay;
 
 	@Getter(AccessLevel.PACKAGE)
-	private final Set<GameObject> rocks = new HashSet<>();
+	private final Set<TileObject> tileObjects = new HashSet<>();
 
 	@Provides
 	HDTileIndicatorConfig provideConfig(ConfigManager configManager)
@@ -58,26 +51,42 @@ public class HDTileIndicatorPlugin extends Plugin
 	protected void shutDown() throws Exception
 	{
 		overlayManager.remove(overlay);
-		rocks.clear();
+		tileObjects.clear();
 	}
-/*
 	@Subscribe
 	public void onGameObjectSpawned(GameObjectSpawned event)
 	{
-		addGameObject(event.getGameObject());
+		addTileObject(event.getGameObject());
+	}
+
+	@Subscribe
+	public void onWallObjectSpawned(WallObjectSpawned event) {
+		addTileObject(event.getWallObject());
+	}
+
+	@Subscribe
+	public void onWallObjectDespawned(WallObjectDespawned event) {
+		removeTileObject(event.getWallObject());
+	}
+
+	@Subscribe
+	public void onWallObjectChanged(WallObjectChanged event)
+	{
+		removeTileObject(event.getPrevious());
+		addTileObject(event.getWallObject());
 	}
 
 	@Subscribe
 	public void onGameObjectChanged(GameObjectChanged event)
 	{
-		removeGameObject(event.getPrevious());
-		addGameObject(event.getGameObject());
+		removeTileObject(event.getPrevious());
+		addTileObject(event.getGameObject());
 	}
 
 	@Subscribe
 	public void onGameObjectDespawned(GameObjectDespawned event)
 	{
-		removeGameObject(event.getGameObject());
+		removeTileObject(event.getGameObject());
 	}
 
 	@Subscribe
@@ -86,19 +95,17 @@ public class HDTileIndicatorPlugin extends Plugin
 		if (event.getGameState() == GameState.LOADING)
 		{
 			// on region changes the tiles get set to null
-			rocks.clear();
+			tileObjects.clear();
 		}
 	}
 
-	private void addGameObject(GameObject gameObject)
+	private void addTileObject(TileObject tileObject)
 	{
-		if (gameObject.getRenderable() != null || gameObject.getRenderable() instanceof Model) {
-			rocks.add(gameObject);
-		}
+		tileObjects.add(tileObject);
 	}
 
-	private void removeGameObject(GameObject gameObject)
+	private void removeTileObject(TileObject tileObject)
 	{
-		rocks.remove(gameObject);
-	}*/
+		tileObjects.remove(tileObject);
+	}
 }
