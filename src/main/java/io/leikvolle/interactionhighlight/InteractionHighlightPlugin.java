@@ -1,4 +1,4 @@
-package io.leikvolle.interactionhighlighter;
+package io.leikvolle.interactionhighlight;
 
 import com.google.inject.Provides;
 import javax.inject.Inject;

@@ -1,4 +1,4 @@
-package io.leikvolle.interactionhighlighter;
+package io.leikvolle.interactionhighlight;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;

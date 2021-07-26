@@ -1,4 +1,4 @@
-package io.leikvolle.interactionhighlighter;
+package io.leikvolle.interactionhighlight;
 
 import java.awt.Color;
 import net.runelite.client.config.Alpha;
