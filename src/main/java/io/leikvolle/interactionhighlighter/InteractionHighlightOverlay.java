@@ -53,7 +53,7 @@ public class InteractionHighlightOverlay extends Overlay {
     private boolean renderNpcHighlight(String targetName, String option) {
         Point mousePosition = this.client.getMouseCanvasPosition();
         NPC nearest = null;
-        int shortestsDistance = Integer.MAX_VALUE;
+        int shortestDistance = Integer.MAX_VALUE;
         for (NPC actor : client.getNpcs()) {
             if (Objects.equals(actor.getName(), targetName)) {
                 Shape shape = Perspective.getClickbox(client, actor.getModel(), actor.getOrientation(), actor.getLocalLocation());
@@ -61,9 +61,9 @@ public class InteractionHighlightOverlay extends Overlay {
                     LocalPoint local = actor.getLocalLocation();
                     LocalPoint camera = new LocalPoint(client.getCameraX(), client.getCameraY());
                     int actorDistance = local.distanceTo(camera);
-                    if (actorDistance < shortestsDistance && actor.getWorldLocation().getPlane() == client.getPlane()) {
+                    if (actorDistance < shortestDistance && actor.getWorldLocation().getPlane() == client.getPlane()) {
                         nearest = actor;
-                        shortestsDistance = actorDistance;
+                        shortestDistance = actorDistance;
                     }
                 }
             }
@@ -87,7 +87,7 @@ public class InteractionHighlightOverlay extends Overlay {
     private boolean renderObjectHighlight(int objectId) {
         Point mousePosition = this.client.getMouseCanvasPosition();
         TileObject nearestGO = null;
-        int shortestsDistance = Integer.MAX_VALUE;
+        int shortestDistance = Integer.MAX_VALUE;
         for (TileObject tileObject : plugin.getTileObjects()) {
             if (tileObject.getId() == objectId) {
                 Shape clickBox = tileObject.getClickbox();
@@ -95,9 +95,9 @@ public class InteractionHighlightOverlay extends Overlay {
                     LocalPoint local = tileObject.getLocalLocation();
                     LocalPoint camera = new LocalPoint(client.getCameraX(), client.getCameraY());
                     int objectDistance = local.distanceTo(camera);
-                    if (objectDistance < shortestsDistance && tileObject.getWorldLocation().getPlane() == client.getPlane()) {
+                    if (objectDistance < shortestDistance && tileObject.getWorldLocation().getPlane() == client.getPlane()) {
                         nearestGO = tileObject;
-                        shortestsDistance = objectDistance;
+                        shortestDistance = objectDistance;
                     }
                 }
             }

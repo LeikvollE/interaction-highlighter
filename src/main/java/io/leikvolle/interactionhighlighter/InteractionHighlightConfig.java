@@ -13,51 +13,51 @@ public interface InteractionHighlightConfig extends Config
 	@Alpha
 	@ConfigItem(
 			keyName = "highlightAttackColor",
-			name = "Hovered tile",
-			description = "Configures the highlight color of hovered tile",
+			name = "Attack highlight color",
+			description = "The color of the outline if attacking an npc",
 			position = 1
 	)
 	default Color highlightAttackColor()
 	{
-		return new Color(0x80FF0000, true);
+		return new Color(0x90FF0000, true);
 	}
 
 	@Alpha
 	@ConfigItem(
 			keyName = "highlightNpcColor",
-			name = "Hovered tile",
-			description = "Configures the highlight color of hovered tile",
+			name = "NPC highlight color",
+			description = "The color of the outline when hovering an npc",
 			position = 2
 	)
 	default Color highlightNpcColor()
 	{
-		return new Color(0x80FFFF00, true);
+		return new Color(0x90FFFF00, true);
 	}
 
 	@Alpha
 	@ConfigItem(
 			keyName = "highlightObjectColor",
-			name = "Hovered tile",
-			description = "Configures the highlight color of hovered tile",
+			name = "Object highlight color",
+			description = "The color of the outline when hovering an object",
 			position = 3
 	)
 	default Color highlightObjectColor()
 	{
-		return new Color(0x8000FFFF, true);
+		return new Color(0x9000FFFF, true);
 	}
 
 	@ConfigItem(
 			keyName = "highlightInteractionWidth",
 			name = "Interaction highlight width",
-			description = "Limits how often the interaction highlight updates",
+			description = "The width of the outline",
 			position = 4
 	)
-	default int highlightInteractionWidth() {return 3;}
+	default int highlightInteractionWidth() {return 4;}
 
 	@ConfigItem(
 			keyName = "highlightInteractionFeather",
 			name = "Interaction highlight feather",
-			description = "Limits how often the interaction highlight updates",
+			description = "Feather of the outline",
 			position = 5
 	)
 	default int highlightInteractionFeather() {return 50;}
@@ -65,7 +65,7 @@ public interface InteractionHighlightConfig extends Config
 	@ConfigItem(
 			keyName = "highlightNPCs",
 			name = "Highlight NPCs",
-			description = "Limits how often the interaction highlight updates",
+			description = "Highlight NPCs",
 			position = 6
 	)
 	default boolean highlightNPCs() {return true;}
@@ -73,16 +73,8 @@ public interface InteractionHighlightConfig extends Config
 	@ConfigItem(
 			keyName = "highlightGameObjects",
 			name = "Highlight Game Objects",
-			description = "Limits how often the interaction highlight updates",
+			description = "Highlight Game Objects",
 			position = 7
 	)
 	default boolean highlightGameObjects() {return true;}
-
-	@ConfigItem(
-			keyName = "highlightWallObjects",
-			name = "Highlight Wall Objects",
-			description = "Limits how often the interaction highlight updates",
-			position = 8
-	)
-	default boolean highlightWallObjects() {return true;}
 }
