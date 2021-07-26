@@ -1,4 +1,4 @@
-package io.leikvolle.hdtileindicator;
+package io.leikvolle.interactionhighlighter;
 
 import com.google.inject.Provides;
 import javax.inject.Inject;
@@ -18,10 +18,9 @@ import java.util.HashSet;
 import java.util.Set;
 @Slf4j
 @PluginDescriptor(
-		name = "HD Tile Indicator",
-		description = "Highlight the tile you are currently moving to in high definition",
-		tags = {"highlight", "overlay"},
-		enabledByDefault = false
+		name = "Interaction Highlighter",
+		description = "Highlight the NPC or object you are hovering, like in rs3",
+		tags = {"highlight", "overlay"}
 )
 public class HDTileIndicatorPlugin extends Plugin
 {

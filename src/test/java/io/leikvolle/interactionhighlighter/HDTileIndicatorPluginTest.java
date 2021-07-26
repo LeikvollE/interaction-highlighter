@@ -1,4 +1,4 @@
-package io.leikvolle.hdtileindicator;
+package io.leikvolle.interactionhighlighter;
 
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;

@@ -1,16 +1,13 @@
-package io.leikvolle.hdtileindicator;
+package io.leikvolle.interactionhighlighter;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
-import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
 
 import net.runelite.api.*;
@@ -82,16 +79,6 @@ public class HDTileIndicatorOverlay extends Overlay {
 
         String option = menuEntry.getOption();
 
-        Color highlightColor;
-        switch (option) {
-            case "Attack":
-                highlightColor = config.highlightAttackColor();
-                break;
-            default:
-                highlightColor = config.highlightNpcColor();
-                break;
-        }
-
         Point mousePosition = client.getMouseCanvasPosition();
 
         NPC nearest = null;
@@ -117,7 +104,16 @@ public class HDTileIndicatorOverlay extends Overlay {
                 modelOutlineRenderer.drawOutline(nearestGO, config.highlightInteractionWidth(), config.highlightObjectColor(), config.highlightInteractionFeather());
             }
         } else {
-            modelOutlineRenderer.drawOutline(nearest, config.highlightInteractionWidth(), highlightColor, config.highlightInteractionFeather());
+            Color npcHighlightColor;
+            switch (option) {
+                case "Attack":
+                    npcHighlightColor = config.highlightAttackColor();
+                    break;
+                default:
+                    npcHighlightColor = config.highlightNpcColor();
+                    break;
+            }
+            modelOutlineRenderer.drawOutline(nearest, config.highlightInteractionWidth(), npcHighlightColor, config.highlightInteractionFeather());
         }
     }
 

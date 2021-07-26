@@ -13,7 +13,6 @@ repositories {
 def runeLiteVersion = '1.7.17'
 
 dependencies {
-	compile 'org.locationtech.jts:jts-core:1.18.1'
 	compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
 
 	compileOnly 'org.projectlombok:lombok:1.18.4'
