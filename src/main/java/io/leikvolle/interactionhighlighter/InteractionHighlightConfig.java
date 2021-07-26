@@ -7,7 +7,7 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
 @ConfigGroup("hdtileindicators")
-public interface HDTileIndicatorConfig extends Config
+public interface InteractionHighlightConfig extends Config
 {
 
 	@Alpha

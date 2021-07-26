@@ -7,7 +7,7 @@ public class HDTileIndicatorPluginTest
 {
 	public static void main(String[] args) throws Exception
 	{
-		ExternalPluginManager.loadBuiltin(HDTileIndicatorPlugin.class);
+		ExternalPluginManager.loadBuiltin(InteractionHighlightPlugin.class);
 		RuneLite.main(args);
 	}
 }

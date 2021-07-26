@@ -22,22 +22,22 @@ import java.util.Set;
 		description = "Highlight the NPC or object you are hovering, like in rs3",
 		tags = {"highlight", "overlay"}
 )
-public class HDTileIndicatorPlugin extends Plugin
+public class InteractionHighlightPlugin extends Plugin
 {
 
 	@Inject
 	private OverlayManager overlayManager;
 
 	@Inject
-	private HDTileIndicatorOverlay overlay;
+	private InteractionHighlightOverlay overlay;
 
 	@Getter(AccessLevel.PACKAGE)
 	private final Set<TileObject> tileObjects = new HashSet<>();
 
 	@Provides
-	HDTileIndicatorConfig provideConfig(ConfigManager configManager)
+	InteractionHighlightConfig provideConfig(ConfigManager configManager)
 	{
-		return configManager.getConfig(HDTileIndicatorConfig.class);
+		return configManager.getConfig(InteractionHighlightConfig.class);
 	}
 
 	@Override
